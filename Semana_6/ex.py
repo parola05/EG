@@ -2,6 +2,7 @@ from lark import Discard
 from lark import Lark,Token,Tree
 from datetime import date
 from lark.visitors import Interpreter
+from lark import Transformer
 
 """
 1-) Transforme a seguinte GIC em notação lark :
@@ -179,5 +180,86 @@ class MyInterpreter(Interpreter):
         #DATA:DIGIT DIGIT "-" DIGIT DIGIT "-" DIGIT DIGIT DIGIT DIGIT
         pass 
 
-latex = MyInterpreter().visit(parse_tree)
+#latex = MyInterpreter().visit(parse_tree)
+#print(latex)
+
+class MyTransformer(Transformer):
+    def __init__(self) -> None:
+        super().__init__()
+        self.latex = ""
+
+    def start(self,production):
+        #start: capa "[" pags "]" ccapa
+        return self.latex
+
+    def capa(self,production): 
+        #capa: titulo autor data
+        self.latex += f"""\\title{{{production[0]}}}
+\\author{{{production[1]}}}"""
+
+    def pags(self,production):
+        #pags: pag+
+        pass
+
+    def pag(self,production):
+        #pag:sep | folha
+        self.latex += f"""
+\\newpage"""
+
+    def sep(self,production):
+        #sep:titulo
+        titulo = production[0]
+        self.latex += f"""
+\\section{{{titulo}}}"""
+
+    def folha(self,production):
+        #folha:foto+
+        pass
+
+    def foto(self,production):
+        #foto:ficheiro legenda
+
+        ficheiro = production[0]
+        legenda = production[1]
+        
+        self.latex += f"""
+\\begin{{figure}}[h!]
+\\centering
+\\includegraphics[width=0.3\\textwidth]{{{ficheiro}}}
+\\caption{{\\label{{fig:{ficheiro}}}{legenda}}}
+\\end{{figure}}"""
+
+    def ficheiro(self,production):
+        #ficheiro:WORDWNUMBER
+        return production[0].value
+
+    def legenda(self,production):
+        #legenda:QUOTEDWORD
+        return production[0].value
+    
+    def ccapa(self,production):
+        #ccapa:fecho data
+        pass 
+
+    def fecho(self,production):
+        #fecho:QUOTEDWORD
+        pass 
+
+    def titulo(self,production):
+        #titulo:QUOTEDWORD
+        return production[0].value
+
+    def autor(self,production):
+        #autor:WORD
+        return production[0].value
+
+    def data(self,production):
+        #data:DATA
+        pass 
+
+    def DATA(self,production):
+        #DATA:DIGIT DIGIT "-" DIGIT DIGIT "-" DIGIT DIGIT DIGIT DIGIT
+        pass 
+
+latex = MyTransformer().transform(parse_tree)
 print(latex)
